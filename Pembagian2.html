@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Zakat Fitrah PRO</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#e9ecef;
+margin:0;
+padding:10px;
+}
+
+h2{
+text-align:center;
+}
+
+input,select,textarea,button{
+width:100%;
+padding:10px;
+margin:5px 0;
+font-size:16px;
+}
+
+button{
+border:none;
+color:white;
+}
+
+.green{background:green;}
+.blue{background:#007bff;}
+.red{background:red;}
+.gray{background:gray;}
+
+.box{
+background:white;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+}
+
+.hidden{
+display:none;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+td,th{
+border:1px solid #ccc;
+padding:5px;
+text-align:center;
+}
+
+.scroll{
+max-height:200px;
+overflow:auto;
+border:1px solid #ccc;
+}
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+
+
+<!-- HALAMAN UTAMA -->
+
+<div id="pageUtama">
+
+<h2>Zakat Fitrah</h2>
+
+<div class="box">
+
+Total Zakat
+
+<h3 id="infoTotal">0</h3>
+
+Total Mustahik
+
+<h3 id="infoOrang">0</h3>
+
+</div>
+
+
+<div class="box">
+
+<div id="ringkasan"></div>
+
+</div>
+
+
+<div class="box">
+
+<button class="green" onclick="hitung()">
+HITUNG
+</button>
+
+<button class="blue" onclick="bukaPengaturan()">
+PENGATURAN
+</button>
+
+<button class="blue" onclick="exportPDF()">
+EXPORT PDF
+</button>
+
+</div>
+
+
+<div class="box">
+
+<div id="hasil" class="scroll"></div>
+
+</div>
+
+</div>
+
+
+
+<!-- HALAMAN PENGATURAN -->
+
+<div id="pageSetting" class="hidden">
+
+<h2>Pengaturan</h2>
+
+
+<div class="box">
+
+Nama Masjid
+<input id="namaMasjid">
+
+Total Zakat
+<input id="total" type="number">
+
+<button class="green" onclick="simpanTotal()">
+Simpan
+</button>
+
+</div>
+
+
+
+<div class="box">
+
+<h3>Kategori</h3>
+
+Nama
+<input id="jNama">
+
+Persen
+<input id="jPersen" type="number">
+
+<button class="blue"
+onclick="addJenis()">
+Tambah
+</button>
+
+<div id="listJenis"></div>
+
+</div>
+
+
+
+<div class="box">
+
+<h3>Mustahik</h3>
+
+<textarea
+id="mBanyak"
+rows="6"
+placeholder="1 nama per baris">
+</textarea>
+
+<select id="mJenis"></select>
+
+<button class="blue"
+onclick="addBanyak()">
+Tambah
+</button>
+
+<div id="listMustahik"
+class="scroll">
+</div>
+
+</div>
+
+
+
+<div class="box">
+
+<button class="gray"
+onclick="tutupPengaturan()">
+Kembali
+</button>
+
+<button class="red"
+onclick="resetData()">
+Reset
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+var jenis=[];
+var mustahik=[];
+var totalZakat=0;
+var namaMasjid="";
+
+
+
+function bukaPengaturan(){
+
+document.getElementById("pageUtama").classList.add("hidden");
+document.getElementById("pageSetting").classList.remove("hidden");
+
+tampilJenis();
+tampilMustahik();
+updateSelect();
+
+}
+
+
+
+function tutupPengaturan(){
+
+document.getElementById("pageSetting").classList.add("hidden");
+document.getElementById("pageUtama").classList.remove("hidden");
+
+updateInfo();
+
+}
+
+
+
+function simpanTotal(){
+
+totalZakat=
+Number(
+document.getElementById("total").value
+);
+
+namaMasjid=
+document.getElementById(
+"namaMasjid"
+).value;
+
+updateInfo();
+
+saveData();
+
+popup("Data disimpan");
+
+}
+
+
+
+function addJenis(){
+
+var n=
+document.getElementById("jNama").value;
+
+var p=
+Number(
+document.getElementById("jPersen").value
+);
+
+if(!n)return;
+
+jenis.push({
+nama:n,
+persen:p
+});
+
+tampilJenis();
+updateSelect();
+
+saveData();
+
+popup("Kategori ditambahkan");
+
+}
+
+function tampilJenis(){
+
+var h="";
+
+h+="<table>";
+
+h+="<tr>";
+h+="<th>Nama</th>";
+h+="<th>%</th>";
+h+="<th>Aksi</th>";
+h+="</tr>";
+
+var total=0;
+
+for(var i=0;i<jenis.length;i++){
+
+h+="<tr>";
+
+h+="<td>"+jenis[i].nama+"</td>";
+
+h+="<td>";
+
+h+="<input type='number' ";
+h+="value='"+jenis[i].persen+"' ";
+h+="style='width:60px' ";
+h+="onchange='editPersen("+i+",this.value)'>";
+
+h+="</td>";
+
+h+="<td>";
+
+h+="<button onclick='hapusJenis("+i+")'>X</button>";
+
+h+="</td>";
+
+h+="</tr>";
+
+total+=Number(jenis[i].persen);
+
+}
+
+h+="</table>";
+
+h+="Total % = "+total;
+
+document.getElementById(
+"listJenis"
+).innerHTML=h;
+
+saveData();
+
+}
+
+function editPersen(i,v){
+
+jenis[i].persen=
+Number(v);
+
+saveData();
+
+}
+
+function hapusJenis(i){
+
+if(
+confirm("Hapus kategori?")
+){
+
+jenis.splice(i,1);
+
+tampilJenis();
+updateSelect();
+saveData();
+
+}
+
+}
+
+function updateSelect(){
+
+var s="";
+
+for(var i=0;i<jenis.length;i++){
+
+s+="<option>"+
+jenis[i].nama+
+"</option>";
+
+}
+
+document.getElementById("mJenis").innerHTML=s;
+
+}
+
+
+
+function addBanyak(){
+
+var teks=
+document.getElementById("mBanyak").value;
+
+var k=
+document.getElementById("mJenis").value;
+
+var arr=
+teks.split("\n");
+
+for(var i=0;i<arr.length;i++){
+
+var n=arr[i].trim();
+
+if(n!=""){
+
+mustahik.push({
+nama:n,
+jenis:k
+});
+
+}
+
+}
+
+tampilMustahik();
+
+saveData();
+
+popup("Mustahik ditambahkan");
+
+}
+
+function updateInfo(){
+
+document.getElementById("infoTotal").innerHTML=
+totalZakat+" kg";
+
+document.getElementById("infoOrang").innerHTML=
+mustahik.length;
+
+}
+
+
+
+
+
+
+
+function resetData(){
+
+jenis=[];
+mustahik=[];
+totalZakat=0;
+
+updateInfo();
+
+tampilJenis();
+tampilMustahik();
+
+}
+/* =========================
+LOCAL STORAGE
+========================= */
+
+function saveData(){
+
+localStorage.setItem(
+"jenis",
+JSON.stringify(jenis)
+);
+
+localStorage.setItem(
+"mustahik",
+JSON.stringify(mustahik)
+);
+
+localStorage.setItem(
+"totalZakat",
+totalZakat
+);
+
+localStorage.setItem(
+"namaMasjid",
+namaMasjid
+);
+localStorage.setItem(
+"nomorLaporan",
+nomorLaporan
+);
+}
+
+
+function loadData(){
+
+var j=
+localStorage.getItem("jenis");
+
+var m=
+localStorage.getItem("mustahik");
+
+var t=
+localStorage.getItem("totalZakat");
+
+var n=
+localStorage.getItem("namaMasjid");
+
+
+if(j)jenis=JSON.parse(j);
+if(m)mustahik=JSON.parse(m);
+if(t)totalZakat=Number(t);
+if(n)namaMasjid=n;
+
+var nl =
+localStorage.getItem("nomorLaporan");
+
+if(nl)nomorLaporan=
+Number(nl);
+
+updateInfo();
+tampilJenis();
+tampilMustahik();
+updateSelect();
+
+}
+
+loadData();
+
+
+
+/* =========================
+EDIT HAPUS MUSTAHIK
+========================= */
+
+function tampilMustahik(){
+
+var h="<table>";
+
+h+="<tr>";
+h+="<th>No</th>";
+h+="<th>Nama</th>";
+h+="<th>Jenis</th>";
+h+="<th>Aksi</th>";
+h+="</tr>";
+
+for(var i=0;i<mustahik.length;i++){
+
+h+="<tr>";
+
+h+="<td>"+(i+1)+"</td>";
+
+h+="<td>"+mustahik[i].nama+"</td>";
+
+h+="<td>"+mustahik[i].jenis+"</td>";
+
+h+="<td>";
+
+h+="<button onclick='editM("+i+")'>E</button>";
+
+h+="<button onclick='hapusM("+i+")'>X</button>";
+
+h+="</td>";
+
+h+="</tr>";
+
+}
+
+h+="</table>";
+
+document.getElementById(
+"listMustahik"
+).innerHTML=h;
+
+saveData();
+
+}
+
+
+
+function editM(i){
+
+var n=
+prompt(
+"Nama",
+mustahik[i].nama
+);
+
+if(n){
+
+mustahik[i].nama=n;
+
+tampilMustahik();
+
+}
+
+}
+
+
+
+function hapusM(i){
+
+mustahik.splice(i,1);
+
+tampilMustahik();
+
+}
+
+
+
+/* =========================
+HASIL KELOMPOK PER KATEGORI
+========================= */
+
+function hitung(){
+
+var totalPers=0;
+
+for(var i=0;i<jenis.length;i++){
+totalPers+=jenis[i].persen;
+}
+
+if(totalPers!=100){
+
+alert("Persen harus 100");
+return;
+
+}
+
+var hasil="";
+var ring="";
+
+hasil+="<div style='max-height:300px;overflow:auto'>";
+
+hasil+="<table>";
+
+hasil+="<tr>";
+hasil+="<th>Nama</th>";
+hasil+="<th>Jenis</th>";
+hasil+="<th>Kg</th>";
+hasil+="</tr>";
+
+for(var i=0;i<jenis.length;i++){
+
+var j=jenis[i];
+
+var bagian=
+totalZakat*j.persen/100;
+
+var orang=[];
+
+for(var k=0;k<mustahik.length;k++){
+
+if(
+mustahik[k].jenis==
+j.nama
+){
+
+orang.push(
+mustahik[k]
+);
+
+}
+
+}
+
+var per=0;
+
+if(orang.length>0){
+
+per=
+bagian/
+orang.length;
+
+}
+
+
+ring+=
+j.nama+
+" : "+
+bagian.toFixed(2)+
+" kg / "+
+orang.length+
+" = "+
+per.toFixed(2)+
+"<br>";
+
+
+hasil+="<tr>";
+hasil+="<th colspan=3 style='background:#ddd'>";
+hasil+=j.nama+
+" total "+
+bagian.toFixed(2);
+hasil+="</th>";
+hasil+="</tr>";
+
+
+for(var x=0;x<orang.length;x++){
+
+hasil+="<tr>";
+
+hasil+="<td>"+orang[x].nama+"</td>";
+
+hasil+="<td>"+j.nama+"</td>";
+
+hasil+="<td>"+per.toFixed(2)+"</td>";
+
+hasil+="</tr>";
+
+}
+
+}
+
+hasil+="</table>";
+hasil+="</div>";
+
+document.getElementById(
+"hasil"
+).innerHTML=hasil;
+
+document.getElementById(
+"ringkasan"
+).innerHTML=ring;
+
+saveData();
+
+}
+
+
+
+/* =========================
+PDF A4 RAPI
+========================= */
+var nomorLaporan = 1;
+
+function exportPDF(){
+
+if(mustahik.length==0){
+alert("Belum ada data");
+return;
+}
+
+const { jsPDF } = window.jspdf;
+
+const doc = new jsPDF();
+
+const tgl = new Date().toLocaleDateString();
+
+let totalJiwa = mustahik.length;
+
+let rows = [];
+
+let ringRows = [];
+
+
+// =========================
+// HITUNG DATA
+// =========================
+
+for(let i=0;i<jenis.length;i++){
+
+let j = jenis[i];
+
+let persen = Number(j.persen);
+
+let totalKg = totalZakat * persen / 100;
+
+let orang = [];
+
+for(let k=0;k<mustahik.length;k++){
+
+if(mustahik[k].jenis==j.nama){
+
+orang.push(mustahik[k]);
+
+}
+
+}
+
+let per = 0;
+
+if(orang.length>0){
+per = totalKg / orang.length;
+}
+
+// ringkasan
+
+ringRows.push([
+j.nama,
+persen+"%",
+orang.length,
+totalKg.toFixed(2),
+per.toFixed(2)
+]);
+
+// detail
+
+for(let x=0;x<orang.length;x++){
+
+rows.push([
+orang[x].nama,
+j.nama,
+per.toFixed(2)
+]);
+
+}
+
+}
+
+
+
+// =========================
+// JUDUL
+// =========================
+
+doc.setFontSize(14);
+
+doc.text(
+"LAPORAN PANITIA ZAKAT FITRAH",
+105,
+10,
+null,
+null,
+"center"
+);
+
+doc.setFontSize(12);
+
+doc.text(
+namaMasjid,
+105,
+16,
+null,
+null,
+"center"
+);
+
+doc.setFontSize(10);
+
+doc.text(
+"Tanggal : "+tgl,
+10,
+26
+);
+
+doc.text(
+"Total Zakat : "+totalZakat+" kg",
+10,
+32
+);
+
+doc.text(
+"Total Mustahik : "+totalJiwa,
+10,
+38
+);
+
+
+// =========================
+// RINGKASAN
+// =========================
+
+doc.autoTable({
+
+startY:44,
+
+head:[[
+"Jenis",
+"%",
+"Orang",
+"Total Kg",
+"Kg / Orang"
+]],
+
+body:ringRows,
+
+styles:{
+fontSize:9,
+halign:"center"
+},
+
+headStyles:{
+fillColor:[0,0,0]
+}
+
+});
+
+
+// =========================
+// TABEL NAMA PER JENIS
+// =========================
+
+let yPos = doc.lastAutoTable.finalY + 10;
+
+for(let i=0;i<jenis.length;i++){
+
+let j = jenis[i];
+
+let body = [];
+
+for(let k=0;k<mustahik.length;k++){
+
+if(mustahik[k].jenis == j.nama){
+
+body.push([
+body.length+1,
+mustahik[k].nama
+]);
+
+}
+
+}
+
+if(body.length==0) continue;
+
+
+// kalau halaman penuh
+
+if(yPos > 250){
+
+doc.addPage();
+yPos = 20;
+
+}
+
+
+// judul kategori
+
+doc.setFontSize(11);
+
+doc.text(
+"Daftar " + j.nama,
+14,
+yPos
+);
+
+yPos += 4;
+
+
+// tabel
+
+doc.autoTable({
+
+startY: yPos,
+
+head: [[
+"No",
+"Nama"
+]],
+
+body: body,
+
+styles:{
+fontSize:9
+},
+
+headStyles:{
+fillColor:[0,0,0]
+}
+
+});
+
+yPos = doc.lastAutoTable.finalY + 8;
+
+}
+
+
+// =========================
+// TANDA TANGAN
+// =========================
+
+let y = doc.lastAutoTable.finalY + 20;
+
+if(y>250){
+
+doc.addPage();
+
+y=20;
+
+}
+
+doc.setFontSize(11);
+
+doc.text("Ketua",20,y);
+doc.text("Bendahara",90,y);
+doc.text("Petugas",150,y);
+
+doc.text("(____________)",20,y+30);
+doc.text("(____________)",90,y+30);
+doc.text("(____________)",150,y+30);
+
+
+doc.save("Laporan_Pembagian_Zakat.pdf");
+
+
+}
+</script>
+</body>
+</html>
