@@ -878,58 +878,80 @@ fillColor:[0,0,0]
 
 
 // =========================
-// DAFTAR NAMA PER JENIS
+// TABEL NAMA PER JENIS
 // =========================
 
 let yPos = doc.lastAutoTable.finalY + 10;
-
-doc.setFontSize(11);
 
 for(let i=0;i<jenis.length;i++){
 
 let j = jenis[i];
 
-let orang = [];
+let body = [];
 
 for(let k=0;k<mustahik.length;k++){
 
 if(mustahik[k].jenis == j.nama){
 
-orang.push(mustahik[k].nama);
+body.push([
+body.length+1,
+mustahik[k].nama
+]);
 
 }
 
 }
 
-if(orang.length==0) continue;
+if(body.length==0) continue;
 
-if(yPos>270){
+
+// kalau halaman penuh
+
+if(yPos > 250){
 
 doc.addPage();
-yPos=20;
+yPos = 20;
 
 }
 
-doc.text(j.nama,10,yPos);
 
-yPos+=6;
+// judul kategori
 
-for(let x=0;x<orang.length;x++){
+doc.setFontSize(11);
 
-if(yPos>280){
+doc.text(
+"Daftar " + j.nama,
+14,
+yPos
+);
 
-doc.addPage();
-yPos=20;
+yPos += 4;
 
+
+// tabel
+
+doc.autoTable({
+
+startY: yPos,
+
+head: [[
+"No",
+"Nama"
+]],
+
+body: body,
+
+styles:{
+fontSize:9
+},
+
+headStyles:{
+fillColor:[0,0,0]
 }
 
-doc.text("- "+orang[x],15,yPos);
+});
 
-yPos+=5;
-
-}
-
-yPos+=5;
+yPos = doc.lastAutoTable.finalY + 8;
 
 }
 
