@@ -878,47 +878,60 @@ fillColor:[0,0,0]
 
 
 // =========================
-// TABEL MUSTAHIK
+// DAFTAR NAMA PER JENIS
 // =========================
 
-doc.autoTable({
+let yPos = doc.lastAutoTable.finalY + 10;
 
-startY:doc.lastAutoTable.finalY+8,
+doc.setFontSize(11);
 
-head:[[
-"Nama",
-"Jenis",
-"Kg"
-]],
+for(let i=0;i<jenis.length;i++){
 
-body:rows,
+let j = jenis[i];
 
-styles:{
-fontSize:9,
-halign:"center"
-},
+let orang = [];
 
-headStyles:{
-fillColor:[40,40,40]
-},
+for(let k=0;k<mustahik.length;k++){
 
-didDrawPage:function(data){
+if(mustahik[k].jenis == j.nama){
 
-let pageHeight =
-doc.internal.pageSize.height;
-
-doc.setFontSize(8);
-
-doc.text(
-"Panitia Zakat Fitrah - "+namaMasjid,
-14,
-pageHeight-8
-);
+orang.push(mustahik[k].nama);
 
 }
 
-});
+}
 
+if(orang.length==0) continue;
+
+if(yPos>270){
+
+doc.addPage();
+yPos=20;
+
+}
+
+doc.text(j.nama,10,yPos);
+
+yPos+=6;
+
+for(let x=0;x<orang.length;x++){
+
+if(yPos>280){
+
+doc.addPage();
+yPos=20;
+
+}
+
+doc.text("- "+orang[x],15,yPos);
+
+yPos+=5;
+
+}
+
+yPos+=5;
+
+}
 
 // =========================
 // TANDA TANGAN
